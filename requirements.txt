@@ -7,4 +7,4 @@ scikit-learn
 joblib
 sqlalchemy
 psycopg[binary]
-python-dotenv
+python-dotenvtabulate
