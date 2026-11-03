@@ -1,62 +1,1001 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ACI606 Cloud Fleet Dashboard</title>
-  <style>
-    :root { font-family: Inter, system-ui, sans-serif; color-scheme: dark; }
-    body { margin: 0; background:#0d1117; color:#e6edf3; }
-    header { padding:22px 28px; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; }
-    h1 { margin:0; font-size:22px; }
-    .tag { color:#8b949e; }
-    main { padding:28px; }
-    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
-    .card { border:1px solid #30363d; border-radius:14px; padding:18px; background:#161b22; }
-    .robot { font-size:20px; font-weight:700; margin-bottom:12px; }
-    .row { display:flex; justify-content:space-between; padding:5px 0; color:#c9d1d9; }
-    .bar { height:8px; background:#30363d; border-radius:99px; overflow:hidden; margin-top:7px; }
-    .fill { height:100%; background:#58a6ff; }
-    .empty { padding:40px; text-align:center; color:#8b949e; border:1px dashed #30363d; border-radius:14px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Cloud Fleet - Panel de Operaciones</title>
+
+    <style>
+        :root {
+            font-family: Inter, system-ui, Arial, sans-serif;
+            color: #172033;
+            background: #f3f6fb;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        header {
+            background: #15243a;
+            color: white;
+            padding: 24px;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 25px;
+        }
+
+        header p {
+            margin: 6px 0 0;
+            color: #cbd5e1;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 28px auto;
+            padding: 0 18px;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 22px;
+        }
+
+        select, button {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 11px 14px;
+            font-size: 14px;
+        }
+
+        select {
+            background: white;
+            min-width: 190px;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+
+        .card h3 {
+            color: #64748b;
+            font-size: 13px;
+            margin: 0 0 12px;
+            font-weight: 600;
+        }
+
+        .metric {
+            font-size: 25px;
+            font-weight: 750;
+            overflow-wrap: anywhere;
+        }
+
+        .unit {
+            color: #64748b;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .section {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 22px;
+            overflow: hidden;
+        }
+
+        .section h2 {
+            font-size: 18px;
+            margin: 0 0 18px;
+        }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .telemetry-item {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .telemetry-item span {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 7px;
+        }
+
+        .telemetry-item strong {
+            font-size: 19px;
+        }
+
+        .status {
+            display: inline-block;
+            border-radius: 20px;
+            padding: 7px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .status.ok, .prediction.NORMAL {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status.error, .prediction.CRITICAL {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status.warning, .prediction.WARNING {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .prediction-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 18px;
+        }
+
+        .prediction {
+            display: inline-block;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 19px;
+            font-weight: 750;
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .prediction-info {
+            display: flex;
+            gap: 26px;
+            flex-wrap: wrap;
+        }
+
+        .prediction-info span {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .prediction-info strong {
+            font-size: 16px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        th {
+            color: #64748b;
+            background: #f8fafc;
+        }
+
+        .message {
+            color: #64748b;
+            font-size: 14px;
+            padding: 12px 0;
+        }
+
+        .error-message {
+            color: #b91c1c;
+            background: #fee2e2;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        @media (max-width: 850px) {
+            .grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .telemetry-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 500px) {
+            .grid, .telemetry-grid {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 21px;
+            }
+        }
+    </style>
 </head>
+
 <body>
+
 <header>
-  <div><h1>Cloud Fleet Dashboard</h1><div class="tag">ACI606 · starter</div></div>
-  <div id="status" class="tag">esperando telemetría...</div>
+    <div class="header-content">
+        <div>
+            <h1>Cloud Fleet Challenge</h1>
+            <p>Panel de monitoreo y operación de robots</p>
+        </div>
+
+        <span id="apiStatus" class="status">
+            Comprobando API...
+        </span>
+    </div>
 </header>
+
 <main>
-  <div id="cards" class="cards"></div>
+
+    <div class="toolbar">
+        <label for="robotSelect">
+            <strong>Seleccionar robot:</strong>
+        </label>
+
+        <select id="robotSelect">
+            <option value="">Cargando robots...</option>
+        </select>
+
+        <button id="refreshButton">
+            Actualizar panel
+        </button>
+    </div>
+
+    <div id="errorMessage" class="error-message"></div>
+
+    <section class="grid">
+
+        <article class="card">
+            <h3>Robots registrados</h3>
+            <div class="metric" id="robotCount">--</div>
+            <div class="unit">Robots con telemetría almacenada</div>
+        </article>
+
+        <article class="card">
+            <h3>Batería</h3>
+            <div class="metric" id="batteryValue">--</div>
+            <div class="unit">Porcentaje de carga</div>
+        </article>
+
+        <article class="card">
+            <h3>Velocidad</h3>
+            <div class="metric" id="speedValue">--</div>
+            <div class="unit">Velocidad del robot</div>
+        </article>
+
+        <article class="card">
+            <h3>Temperatura del motor</h3>
+            <div class="metric" id="temperatureValue">--</div>
+            <div class="unit">Temperatura registrada</div>
+        </article>
+
+    </section>
+
+    <section class="section">
+
+        <h2>Última telemetría del robot</h2>
+
+        <div class="telemetry-grid">
+
+            <div class="telemetry-item">
+                <span>Robot</span>
+                <strong id="robotId">--</strong>
+            </div>
+
+            <div class="telemetry-item">
+                <span>Posición X</span>
+                <strong id="positionX">--</strong>
+            </div>
+
+            <div class="telemetry-item">
+                <span>Posición Y</span>
+                <strong id="positionY">--</strong>
+            </div>
+
+            <div class="telemetry-item">
+                <span>Vibración</span>
+                <strong id="vibrationValue">--</strong>
+            </div>
+
+            <div class="telemetry-item">
+                <span>Corriente del motor</span>
+                <strong id="currentValue">--</strong>
+            </div>
+
+            <div class="telemetry-item">
+                <span>Distancia al obstáculo</span>
+                <strong id="obstacleValue">--</strong>
+            </div>
+
+            <div class="telemetry-item">
+                <span>Fecha de telemetría</span>
+                <strong id="timestampValue">--</strong>
+            </div>
+
+            <div class="telemetry-item">
+                <span>Estado de almacenamiento</span>
+                <strong id="storageValue">--</strong>
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="section">
+
+        <h2>Predicción de Machine Learning</h2>
+
+        <div class="prediction-box">
+
+            <div>
+                <span style="display:block; color:#64748b; margin-bottom:10px;">
+                    Estado predicho
+                </span>
+
+                <div id="predictionStatus" class="prediction">
+                    Sin predicción
+                </div>
+            </div>
+
+            <div class="prediction-info">
+
+                <div>
+                    <span>Confianza</span>
+                    <strong id="confidenceValue">--</strong>
+                </div>
+
+                <div>
+                    <span>Versión del modelo</span>
+                    <strong id="modelVersion">--</strong>
+                </div>
+
+                <div>
+                    <span>Tiempo de inferencia</span>
+                    <strong id="inferenceTime">--</strong>
+                </div>
+
+            </div>
+
+            <button id="predictButton">
+                Ejecutar predicción
+            </button>
+
+        </div>
+
+        <p class="message">
+            La predicción utiliza la última telemetría del robot seleccionado.
+        </p>
+
+    </section>
+
+    <section class="section">
+
+        <h2>Historial de telemetría</h2>
+
+        <div class="table-wrapper">
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Velocidad</th>
+                        <th>Batería</th>
+                        <th>Temperatura</th>
+                        <th>Vibración</th>
+                        <th>Corriente</th>
+                        <th>Distancia</th>
+                    </tr>
+                </thead>
+
+                <tbody id="historyBody">
+                    <tr>
+                        <td colspan="7" class="message">
+                            Selecciona un robot para consultar su historial.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+        <p class="message" id="historyInfo">
+            Se muestran los 20 registros más recientes.
+        </p>
+
+    </section>
+
 </main>
+
+<footer>
+    ACI606 · Cloud Computing · Cloud Fleet Challenge
+</footer>
+
 <script>
-const cards = document.getElementById('cards');
-const statusEl = document.getElementById('status');
 
-function card(r) {
-  const battery = Math.max(0, Math.min(100, Number(r.battery)));
-  return `<div class="card">
-    <div class="robot">${r.robot_id}</div>
-    <div class="row"><span>Battery</span><span>${battery.toFixed(1)} %</span></div>
-    <div class="bar"><div class="fill" style="width:${battery}%"></div></div>
-    <div class="row"><span>Speed</span><span>${Number(r.speed).toFixed(2)}</span></div>
-    <div class="row"><span>Motor temp.</span><span>${Number(r.motor_temp).toFixed(1)} °C</span></div>
-    <div class="row"><span>Vibration</span><span>${Number(r.vibration).toFixed(2)}</span></div>
-    <div class="row"><span>Obstacle</span><span>${Number(r.obstacle_distance).toFixed(2)} m</span></div>
-  </div>`;
-}
+    const $ = (selector) => document.querySelector(selector);
 
-async function refresh() {
-  try {
-    const res = await fetch('/robots');
-    const robots = await res.json();
-    statusEl.textContent = `${robots.length} robot(s) conectados`;
-    cards.innerHTML = robots.length ? robots.map(card).join('') : '<div class="empty">Ejecuta el simulador para comenzar a recibir robots.</div>';
-  } catch (err) {
-    statusEl.textContent = 'API no disponible';
-  }
-}
-refresh();
-setInterval(refresh, 1500);
+    const FEATURE_FIELDS = [
+        "x",
+        "y",
+        "speed",
+        "battery",
+        "motor_temp",
+        "vibration",
+        "motor_current",
+        "obstacle_distance"
+    ];
+
+    let robots = [];
+    let selectedRobotId = null;
+
+    // --------------------------------------------------
+    // UTILIDADES
+    // --------------------------------------------------
+
+    async function apiRequest(path, options = {}) {
+
+        const response = await fetch(path, options);
+
+        const body = await response.json().catch(() => null);
+
+        if (!response.ok) {
+
+            const detail =
+                body?.detail || `Error HTTP ${response.status}`;
+
+            throw new Error(
+                typeof detail === "string"
+                    ? detail
+                    : JSON.stringify(detail)
+            );
+        }
+
+        return body;
+    }
+
+    function showError(message) {
+
+        const element = $("#errorMessage");
+
+        element.textContent = message;
+        element.style.display = "block";
+    }
+
+    function clearError() {
+
+        $("#errorMessage").textContent = "";
+        $("#errorMessage").style.display = "none";
+    }
+
+    function formatNumber(value, decimals = 2) {
+
+        if (value === null || value === undefined) {
+            return "--";
+        }
+
+        const number = Number(value);
+
+        if (!Number.isFinite(number)) {
+            return "--";
+        }
+
+        return number.toFixed(decimals);
+    }
+
+    function formatTimestamp(value) {
+
+        if (value === null || value === undefined) {
+            return "--";
+        }
+
+        let date;
+
+        if (typeof value === "number" || !isNaN(Number(value))) {
+
+            let timestamp = Number(value);
+
+            // Unix seconds se convierten a milisegundos.
+            if (timestamp < 1000000000000) {
+                timestamp *= 1000;
+            }
+
+            date = new Date(timestamp);
+
+        } else {
+
+            date = new Date(value);
+        }
+
+        if (isNaN(date.getTime())) {
+            return String(value);
+        }
+
+        return date.toLocaleString("es-CL");
+    }
+
+    function selectedRobot() {
+
+        return robots.find(
+            robot => robot.robot_id === selectedRobotId
+        );
+    }
+
+    // --------------------------------------------------
+    // ESTADO DE LA API
+    // --------------------------------------------------
+
+    async function loadHealth() {
+
+        const badge = $("#apiStatus");
+
+        try {
+
+            const health = await apiRequest("/health");
+
+            badge.textContent =
+                health.status === "ok"
+                    ? "API operativa"
+                    : "API con problemas";
+
+            badge.className =
+                health.status === "ok"
+                    ? "status ok"
+                    : "status warning";
+
+        } catch (error) {
+
+            badge.textContent = "API no disponible";
+            badge.className = "status error";
+
+            showError(error.message);
+        }
+    }
+
+    // --------------------------------------------------
+    // LISTAR ROBOTS
+    // --------------------------------------------------
+
+    function renderRobotOptions() {
+
+        const select = $("#robotSelect");
+
+        select.replaceChildren();
+
+        if (!robots.length) {
+
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "No hay robots registrados";
+
+            select.appendChild(option);
+
+            selectedRobotId = null;
+
+            return;
+        }
+
+        robots.forEach(robot => {
+
+            const option = document.createElement("option");
+
+            option.value = robot.robot_id;
+            option.textContent = robot.robot_id;
+
+            select.appendChild(option);
+        });
+
+        if (
+            !selectedRobotId ||
+            !robots.some(r => r.robot_id === selectedRobotId)
+        ) {
+            selectedRobotId = robots[0].robot_id;
+        }
+
+        select.value = selectedRobotId;
+    }
+
+    async function loadRobots() {
+
+        robots = await apiRequest("/robots");
+
+        $("#robotCount").textContent = robots.length;
+
+        renderRobotOptions();
+    }
+
+    // --------------------------------------------------
+    // TELEMETRIA
+    // --------------------------------------------------
+
+    function renderTelemetry(robot) {
+
+        if (!robot) {
+
+            const ids = [
+                "robotId",
+                "positionX",
+                "positionY",
+                "vibrationValue",
+                "currentValue",
+                "obstacleValue",
+                "timestampValue",
+                "storageValue",
+                "batteryValue",
+                "speedValue",
+                "temperatureValue"
+            ];
+
+            ids.forEach(id => {
+                document.getElementById(id).textContent = "--";
+            });
+
+            return;
+        }
+
+        $("#robotId").textContent = robot.robot_id;
+
+        $("#positionX").textContent =
+            formatNumber(robot.x);
+
+        $("#positionY").textContent =
+            formatNumber(robot.y);
+
+        $("#vibrationValue").textContent =
+            formatNumber(robot.vibration);
+
+        $("#currentValue").textContent =
+            formatNumber(robot.motor_current);
+
+        $("#obstacleValue").textContent =
+            formatNumber(robot.obstacle_distance);
+
+        $("#batteryValue").textContent =
+            formatNumber(robot.battery, 1) + "%";
+
+        $("#speedValue").textContent =
+            formatNumber(robot.speed);
+
+        $("#temperatureValue").textContent =
+            formatNumber(robot.motor_temp) + " °C";
+
+        $("#timestampValue").textContent =
+            formatTimestamp(robot.timestamp);
+
+        $("#storageValue").textContent = "PostgreSQL";
+    }
+
+    // --------------------------------------------------
+    // HISTORIAL
+    // --------------------------------------------------
+
+    function renderHistory(history) {
+
+        const tbody = $("#historyBody");
+
+        tbody.replaceChildren();
+
+        if (!history.length) {
+
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+
+            cell.colSpan = 7;
+            cell.textContent = "No hay registros de historial.";
+
+            row.appendChild(cell);
+            tbody.appendChild(row);
+
+            return;
+        }
+
+        // Mostrar los veinte registros más recientes.
+        const recent = history.slice(-20).reverse();
+
+        recent.forEach(record => {
+
+            const row = document.createElement("tr");
+
+            const values = [
+                formatTimestamp(record.timestamp),
+                formatNumber(record.speed),
+                formatNumber(record.battery, 1) + "%",
+                formatNumber(record.motor_temp) + " °C",
+                formatNumber(record.vibration),
+                formatNumber(record.motor_current),
+                formatNumber(record.obstacle_distance)
+            ];
+
+            values.forEach(value => {
+
+                const cell = document.createElement("td");
+
+                cell.textContent = value;
+
+                row.appendChild(cell);
+            });
+
+            tbody.appendChild(row);
+        });
+
+        $("#historyInfo").textContent =
+            `Se muestran ${recent.length} de ${history.length} registros disponibles.`;
+    }
+
+    async function loadHistory() {
+
+        const robot = selectedRobot();
+
+        if (!robot) {
+
+            renderHistory([]);
+            return;
+        }
+
+        const history = await apiRequest(
+            `/robots/${encodeURIComponent(robot.robot_id)}/history`
+        );
+
+        renderHistory(history);
+    }
+
+    // --------------------------------------------------
+    // PREDICCION ML
+    // --------------------------------------------------
+
+    function resetPrediction() {
+
+        const badge = $("#predictionStatus");
+
+        badge.textContent = "Sin predicción";
+        badge.className = "prediction";
+
+        $("#confidenceValue").textContent = "--";
+        $("#modelVersion").textContent = "--";
+        $("#inferenceTime").textContent = "--";
+    }
+
+    async function runPrediction() {
+
+        clearError();
+
+        const robot = selectedRobot();
+
+        if (!robot) {
+
+            showError("Selecciona un robot primero.");
+            return;
+        }
+
+        const button = $("#predictButton");
+
+        button.disabled = true;
+        button.textContent = "Calculando...";
+
+        try {
+
+            const payload = {
+                robot_id: robot.robot_id,
+                timestamp: robot.timestamp
+            };
+
+            FEATURE_FIELDS.forEach(field => {
+
+                const value = Number(robot[field]);
+
+                if (!Number.isFinite(value)) {
+
+                    throw new Error(
+                        `El campo ${field} no tiene un valor numérico válido.`
+                    );
+                }
+
+                payload[field] = value;
+            });
+
+            const result = await apiRequest(
+                "/predict",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify(payload)
+                }
+            );
+
+            const badge = $("#predictionStatus");
+
+            badge.textContent = result.predicted_status;
+
+            badge.className =
+                "prediction " + result.predicted_status;
+
+            const confidence = Number(result.confidence);
+
+            $("#confidenceValue").textContent =
+                Number.isFinite(confidence)
+                    ? (confidence * 100).toFixed(2) + "%"
+                    : "--";
+
+            $("#modelVersion").textContent =
+                result.model_version;
+
+            $("#inferenceTime").textContent =
+                formatNumber(result.inference_ms, 3) + " ms";
+
+        } catch (error) {
+
+            showError(
+                "No fue posible ejecutar la predicción: " +
+                error.message
+            );
+
+        } finally {
+
+            button.disabled = false;
+            button.textContent = "Ejecutar predicción";
+        }
+    }
+
+    // --------------------------------------------------
+    // ACTUALIZAR TODO EL DASHBOARD
+    // --------------------------------------------------
+
+    async function refreshDashboard() {
+
+        clearError();
+
+        await loadHealth();
+
+        try {
+
+            await loadRobots();
+
+            const robot = selectedRobot();
+
+            renderTelemetry(robot);
+
+            resetPrediction();
+
+            await loadHistory();
+
+        } catch (error) {
+
+            showError(
+                "No se pudo actualizar el panel: " +
+                error.message
+            );
+        }
+    }
+
+    // --------------------------------------------------
+    // EVENTOS
+    // --------------------------------------------------
+
+    $("#robotSelect").addEventListener(
+        "change",
+        async event => {
+
+            selectedRobotId = event.target.value;
+
+            const robot = selectedRobot();
+
+            renderTelemetry(robot);
+            resetPrediction();
+
+            clearError();
+
+            try {
+
+                await loadHistory();
+
+            } catch (error) {
+
+                showError(error.message);
+            }
+        }
+    );
+
+    $("#refreshButton").addEventListener(
+        "click",
+        refreshDashboard
+    );
+
+    $("#predictButton").addEventListener(
+        "click",
+        runPrediction
+    );
+
+    // --------------------------------------------------
+    // INICIO
+    // --------------------------------------------------
+
+    refreshDashboard();
+
+    // Actualizar automáticamente cada 15 segundos.
+    setInterval(refreshDashboard, 15000);
+
 </script>
+
 </body>
 </html>
