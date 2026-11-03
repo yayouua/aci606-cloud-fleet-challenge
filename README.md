@@ -1,180 +1,404 @@
-# ACI606 - Cloud Fleet Challenge
 
-Starter repository for **Exercise 4** of ACI606 Cloud Computing.
+# Cloud Fleet Challenge
 
-## Repository name
+**ACI606 - Cloud Computing**
 
-Use:
+Sistema de monitoreo, almacenamiento persistente y predicción del estado de robots mediante Machine Learning, desarrollado con FastAPI y PostgreSQL.
 
-`aci606-cloud-fleet-challenge`
+## 1. Descripción del proyecto
 
-## The idea in one sentence
+Cloud Fleet Challenge transforma un prototipo local de monitoreo de robots en un servicio preparado para ejecutarse en una plataforma PaaS.
 
-A virtual fleet sends telemetry to a remote platform. Your group must transform the starter into a **persistent Cloud service** that stores the data, trains and serves an ML model, exposes metrics, and presents the fleet in a dashboard.
+El sistema permite:
 
-## What is already provided
+- Recibir telemetría de robots.
+- Almacenar los registros de manera persistente en PostgreSQL.
+- Consultar robots y su historial completo.
+- Predecir el estado de los robots mediante Machine Learning.
+- Visualizar la información mediante un dashboard web.
+- Supervisar el funcionamiento mediante métricas operacionales.
 
-- Virtual multi-robot fleet simulator.
-- Labelled dataset generator.
-- FastAPI starter service.
-- Working endpoints `/health`, `/telemetry`, `/robots` and a RAM-only `/history`.
-- Minimal web dashboard at `/dashboard`.
-- Training script skeleton.
-- Smoke test.
+Las clases de predicción son:
 
-## What your group must build
+- NORMAL
+- WARNING
+- CRITICAL
 
-### 1. Persistent ingestion
-Replace the starter RAM storage with persistent storage. The service must not lose the complete history when a client disconnects.
+## 2. Arquitectura
 
-Required endpoints:
+La arquitectura del proyecto está compuesta por las siguientes partes:
 
-- `GET /health`
-- `POST /telemetry`
-- `GET /robots`
-- `GET /robots/{robot_id}/history`
+1. **Simulador:** genera datos de telemetría y solicitudes.
+2. **FastAPI:** recibe solicitudes, entrega información y ejecuta predicciones.
+3. **PostgreSQL (Neon):** almacena de manera persistente los registros de telemetría.
+4. **Machine Learning:** utiliza un pipeline entrenado y almacenado en `models/model.joblib`.
+5. **Dashboard:** permite visualizar los robots, su telemetría, historial y predicciones.
+6. **PaaS:** Render se utiliza como plataforma prevista para publicar el servicio.
 
-### 2. ML training
-Generate or collect a training dataset, perform EDA, compare at least two classifiers, justify the final choice, and save a reproducible model pipeline.
+Flujo general:
 
-Target classes:
+```text
+Simulador
+    |
+    v
+FastAPI
+    |
+    +---- PostgreSQL (Neon)
+    |
+    +---- Modelo ML (model.joblib)
+    |
+    +---- Dashboard
+    |
+    +---- Métricas operacionales
+    |
+    v
+Servicio desplegado en Render
+```
 
-- `NORMAL`
-- `WARNING`
-- `CRITICAL`
+## 3. Tecnologías utilizadas
 
-Minimum evidence:
+| Tecnología | Función |
+|---|---|
+| Python | Lenguaje de programación |
+| FastAPI | API REST |
+| Uvicorn | Servidor de aplicaciones |
+| PostgreSQL | Base de datos |
+| Neon | PostgreSQL gestionado |
+| SQLAlchemy | Acceso a la base de datos |
+| Psycopg | Conector PostgreSQL |
+| Pandas | Procesamiento de datos |
+| Scikit-learn | Entrenamiento y evaluación de modelos |
+| Joblib | Serialización del modelo |
+| HTML, CSS y JavaScript | Dashboard |
+| Render | Plataforma prevista para el despliegue |
 
-- class distribution;
-- confusion matrix;
-- macro F1;
-- train/test separation;
-- technical justification of the selected model.
+## 4. Estructura del proyecto
 
-### 3. Cloud inference service
-Implement:
+```text
+aci606-cloud-fleet-challenge/
+│
+├── app/
+│   ├── main.py
+│   └── db.py
+│
+├── dashboard/
+│   └── index.html
+│
+├── ml/
+│   ├── generate_dataset.py
+│   ├── eda.py
+│   └── train_model.py
+│
+├── data/
+│   └── training.csv
+│
+├── models/
+│   ├── model.joblib
+│   └── model_metadata.json
+│
+├── reports/
+│   ├── model_comparison.csv
+│   ├── confusion_matrix.csv
+│   ├── classification_report.txt
+│   └── training_summary.md
+│
+├── simulator/
+│
+├── tests/
+│
+├── .env.example
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
 
-`POST /predict`
+## 5. Configuración local
 
-Input contract:
+### Requisitos
+
+- Python instalado.
+- Git.
+- Una base de datos PostgreSQL.
+- Variables de conexión configuradas.
+
+### Clonar el repositorio
+
+```bash
+git clone https://github.com/yayouua/aci606-cloud-fleet-challenge.git
+
+cd aci606-cloud-fleet-challenge
+```
+
+### Instalar dependencias
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### Configurar variables de entorno
+
+Crear un archivo `.env` en la raíz del proyecto.
+
+Configurar:
+
+```env
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST/DATABASE?sslmode=require
+MODEL_PATH=models/model.joblib
+```
+
+Reemplazar los valores de conexión por los datos de la propia base Neon.
+
+No publicar el archivo `.env` ni compartir sus credenciales.
+
+### Inicializar la base de datos
+
+```bash
+python -c "from app.db import init_db; init_db()"
+```
+
+### Ejecutar la aplicación
+
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+La API estará disponible localmente en:
+
+```text
+http://127.0.0.1:8000
+```
+
+La documentación interactiva estará disponible en:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+El dashboard estará disponible en:
+
+```text
+http://127.0.0.1:8000/dashboard
+```
+
+## 6. Entrenamiento de Machine Learning
+
+El entrenamiento utiliza un dataset que contiene registros de distintas flotas de robots.
+
+Se comparan dos clasificadores:
+
+- Random Forest.
+- Logistic Regression.
+
+La separación entre entrenamiento y prueba se realiza mediante `GroupShuffleSplit`, utilizando `fleet_id` para evaluar el comportamiento del modelo frente a flotas no vistas.
+
+### Ejecutar entrenamiento
+
+```bash
+python ml/train_model.py
+```
+
+### Resultados de la comparación
+
+En la ejecución registrada se obtuvieron los siguientes resultados:
+
+| Modelo | F1 macro | Accuracy |
+|---|---:|---:|
+| Random Forest | 0.9350 | 0.9320 |
+| Logistic Regression | 0.9368 | 0.9333 |
+
+El modelo seleccionado fue Logistic Regression, por presentar el mayor F1 macro en esa evaluación.
+
+La evaluación utilizó 2.250 registros para entrenamiento y 750 para prueba, con 15 flotas de entrenamiento y 5 flotas de prueba sin intersección.
+
+### Artefactos generados
+
+Los resultados del entrenamiento se almacenan en:
+
+```text
+models/model.joblib
+models/model_metadata.json
+reports/model_comparison.csv
+reports/confusion_matrix.csv
+reports/classification_report.txt
+reports/training_summary.md
+```
+
+El modelo serializado se utiliza posteriormente en el endpoint `/predict`.
+
+## 7. Endpoints de la API
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | `/health` | Estado del servicio |
+| POST | `/telemetry` | Registrar telemetría |
+| GET | `/robots` | Consultar robots |
+| GET | `/robots/{id}/history` | Consultar historial |
+| POST | `/predict` | Predecir estado del robot |
+| GET | `/metrics` | Consultar métricas |
+| GET | `/dashboard` | Panel de operación |
+
+### Ejemplo de telemetría y predicción
+
+Solicitud:
 
 ```json
 {
   "robot_id": "R03",
-  "timestamp": 1780000000.0,
-  "x": 4.21,
-  "y": 7.82,
-  "speed": 0.63,
-  "battery": 71.0,
-  "motor_temp": 48.2,
-  "vibration": 0.43,
-  "motor_current": 3.7,
-  "obstacle_distance": 0.42
+  "timestamp": 1793650000,
+  "x": 1.2,
+  "y": 3.4,
+  "speed": 0.8,
+  "battery": 85,
+  "motor_temp": 42,
+  "vibration": 0.2,
+  "motor_current": 1.5,
+  "obstacle_distance": 2.0
 }
 ```
 
-Required response contract:
+Respuesta esperada de `/predict`:
 
 ```json
 {
   "robot_id": "R03",
-  "predicted_status": "WARNING",
-  "confidence": 0.87,
+  "predicted_status": "NORMAL",
+  "confidence": 0.95,
   "model_version": "v1",
   "inference_ms": 12.4
 }
 ```
 
-### 4. Dashboard
-Extend `/dashboard` so that an operator can see, at minimum:
+Los valores de confianza y latencia del ejemplo son ilustrativos.
 
-- connected robots;
-- most recent telemetry;
-- predicted condition;
-- battery;
-- at least one historical or aggregate indicator;
-- API/service status.
+Los datos inválidos, como batería fuera del intervalo permitido o campos faltantes, deben ser rechazados con respuestas HTTP 4xx.
 
-### 5. Observability
-Extend `GET /metrics` with meaningful operational data. At minimum:
+## 8. Persistencia de datos
 
-- number of telemetry requests;
-- number of prediction requests;
-- errors;
-- average prediction latency;
-- service uptime or equivalent operational indicator.
+La aplicación utiliza PostgreSQL gestionado mediante Neon.
 
-### 6. Git traceability
-Your repository must show real development history:
+Los registros se guardan en la base de datos y pueden recuperarse mediante:
 
-- meaningful commits;
-- at least one feature branch;
-- merge into `main`;
-- README describing how to run the system.
+```text
+GET /robots
+GET /robots/{id}/history
+```
 
-### 7. Remote execution
-The final system must be remotely consumable. A purely local notebook is not a Cloud solution.
+El historial no está limitado a los últimos 100 registros en memoria.
 
-## Quick start
+La persistencia debe verificarse enviando telemetría, reiniciando el servicio y consultando nuevamente el historial del robot.
 
-### A. Create environment
+## 9. Observabilidad
+
+El endpoint:
+
+```text
+GET /metrics
+```
+
+permite consultar:
+
+- Solicitudes recibidas.
+- Total de errores.
+- Tasa de errores.
+- Latencia promedio.
+- Latencia P50.
+- Latencia P95.
+- Tiempo de funcionamiento.
+- Cantidad de robots registrados.
+- Estado del servicio de predicción.
+
+Las métricas de latencia y uptime se mantienen en memoria durante la ejecución del servicio.
+
+## 10. Despliegue en Render
+
+El despliegue previsto utiliza Render como Web Service y Neon como PostgreSQL gestionado.
+
+### Comando de instalación
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-In Codespaces you can normally use the existing Python environment instead of creating another one.
-
-### B. Start the API
+### Comando de inicio
 
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-Open:
+### Variables de entorno
 
-- `/docs`
-- `/dashboard`
+Configurar en Render:
 
-### C. Start the virtual fleet
-
-In another terminal:
-
-```bash
-python simulator/fleet_simulator.py --api http://127.0.0.1:8000 --robots 5
+```env
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST/DATABASE?sslmode=require
+MODEL_PATH=models/model.joblib
 ```
 
-The dashboard should begin to show robots.
+El archivo `.env` local no se utiliza como sustituto de la configuración de variables de entorno de Render.
 
-### D. Generate training data
+### URL pública
 
-```bash
-python simulator/generate_dataset.py --samples 3000
-python ml/train_model.py
+**Estado:** pendiente de completar después del despliegue.
+
+URL del servicio:
+
+```text
+PENDIENTE: agregar URL pública de Render
 ```
 
-`train_model.py` is intentionally incomplete.
+### Ubicación de los datos
 
-## First checkpoint - end of kickoff class
+Los datos persistentes se almacenan en PostgreSQL mediante Neon.
 
-Your group should have:
+## 11. Pruebas y validación
 
-- repository cloned/open in Codespaces;
-- API running;
-- simulator connected;
-- `/dashboard` showing multiple robots;
-- first meaningful Git commit;
-- feature branch created;
-- responsibilities divided within the group.
+El sistema debe verificarse mediante las siguientes pruebas:
 
-## Final challenge
+- Disponibilidad de `/health`.
+- Ingesta de telemetría.
+- Consulta de robots.
+- Consulta del historial completo.
+- Predicciones con `/predict`.
+- Rechazo de datos inválidos mediante HTTP 4xx.
+- Consulta de métricas.
+- Persistencia después de reiniciar el servicio.
+- Solicitudes concurrentes y medición de latencia.
+- Evaluación con flotas no utilizadas durante el entrenamiento.
 
-The instructor may evaluate your service using an unseen fleet scenario. The assessment can consider functionality, prediction quality, latency, robustness and the technical defence of the architecture.
+La prueba de despliegue debe ejecutarse contra la URL pública del servicio.
 
-## Important
+## 12. Control de versiones
 
-The robot simulator is **not** the deliverable. It is a client/load generator.
+El desarrollo se realiza utilizando Git y una rama de funcionalidad:
 
-The deliverable is the **Cloud platform** your group builds around it.
+```text
+feature/cloud-deployment
+```
+
+Los cambios se registran mediante commits independientes para:
+
+- Conexión con PostgreSQL.
+- Integración del modelo de Machine Learning.
+- Endpoint de predicción.
+- Dashboard.
+- Observabilidad.
+- Documentación.
+- Despliegue.
+
+La rama de funcionalidad debe integrarse finalmente en `main` mediante un Pull Request dirigido al repositorio del propio grupo.
+
+## 13. Seguridad
+
+- No almacenar credenciales directamente en el código.
+- Mantener `.env` fuera del repositorio.
+- Utilizar `.env.example` como plantilla.
+- Configurar secretos en las variables de entorno de la plataforma.
+- No publicar contraseñas de PostgreSQL ni claves privadas.
+
+## 14. Autores
+
+Proyecto académico desarrollado para:
+
+**ACI606 - Cloud Computing**
+
+Ejercicio 4: Cloud Fleet Challenge.

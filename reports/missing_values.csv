@@ -1,0 +1,13 @@
+column,missing_values
+robot_id,0
+timestamp,0
+x,0
+y,0
+speed,0
+battery,0
+motor_temp,0
+vibration,0
+motor_current,0
+obstacle_distance,0
+fleet_id,0
+status,0
